@@ -1,0 +1,386 @@
+<div class="admin-dashboard-page page-container">
+  <!-- Top Header -->
+  <header class="dashboard-header">
+    <div class="header-info">
+      <div class="header-badge">
+        <span class="pulse-dot"></span>
+        <span>Admin Console</span>
+      </div>
+      <h1>Property Management <em>Dashboard</em></h1>
+      <p>Oversee luxury villas, hotel rooms, and apartments, monitor reservations, and maintain property listings.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadDashboardData()" title="Reload data">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+        </svg>
+        Refresh
+      </button>
+      <button type="button" class="btn btn-primary" (click)="openCreateModal()">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Property
+      </button>
+    </div>
+  </header>
+
+  <!-- Summary Metrics Bar -->
+  <section class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon villas-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </div>
+      <div class="metric-content">
+        <span class="metric-label">Total Properties</span>
+        <h2 class="metric-value">{{ loading ? '...' : villas.length }}</h2>
+        <span class="metric-subtext">Active listings in catalogue</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon bookings-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      </div>
+      <div class="metric-content">
+        <span class="metric-label">Total Bookings</span>
+        <h2 class="metric-value">{{ loadingMetrics ? '...' : totalBookings }}</h2>
+        <span class="metric-subtext">Customer reservations logged</span>
+      </div>
+    </div>
+
+    <div class="metric-card actions-card">
+      <div class="metric-content">
+        <span class="metric-label">Quick Actions</span>
+        <div class="quick-links">
+          <a routerLink="/villa-create" class="quick-btn">
+            <span>+</span> Full Property Form
+          </a>
+          <a routerLink="/villas" class="quick-btn outline">
+            Live Catalogue &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Manage Villas Section -->
+  <section class="manage-section">
+    <div class="section-toolbar">
+      <div class="toolbar-title">
+        <h3>Manage Properties</h3>
+        <span class="badge-count">{{ filteredVillas.length }} of {{ villas.length }} listings</span>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="category-pills">
+        <button
+          *ngFor="let cat of categories"
+          type="button"
+          class="pill-btn"
+          [class.active]="selectedCategory === cat"
+          (click)="filterByCategory(cat)"
+        >
+          {{ formatCategory(cat) }}
+        </button>
+      </div>
+
+      <div class="toolbar-search">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search by name, amenities, ID..."
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="applyFilter()"
+          />
+          <button *ngIf="searchTerm" type="button" class="clear-search" (click)="searchTerm = ''; applyFilter()">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="empty-state">
+      <span class="loading-orb"></span>
+      <p>Loading properties repository...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="!loading && errorMessage" class="empty-state error-state">
+      <h3>Failed to load properties</h3>
+      <p>{{ errorMessage }}</p>
+      <button type="button" class="btn btn-primary" (click)="loadVillas()">Retry Connection</button>
+    </div>
+
+    <!-- Properties Table -->
+    <div class="table-responsive" *ngIf="!loading && !errorMessage && villas.length > 0">
+      <table class="villas-table">
+        <thead>
+          <tr>
+            <th class="th-img">Image</th>
+            <th class="th-name">Name & Details</th>
+            <th class="th-category">Category</th>
+            <th class="th-occupancy">Occupancy</th>
+            <th class="th-price">Price / Night</th>
+            <th class="th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let villa of filteredVillas">
+            <td class="td-img">
+              <div class="thumbnail-wrapper">
+                <img
+                  *ngIf="villa.imageUrl"
+                  [src]="villa.imageUrl"
+                  [alt]="villa.name"
+                  (error)="villa.imageUrl = ''"
+                  class="villa-thumb"
+                />
+                <div *ngIf="!villa.imageUrl" class="villa-thumb-fallback">
+                  <span>#{{ villa.id }}</span>
+                </div>
+              </div>
+            </td>
+
+            <td class="td-name">
+              <div class="name-cell">
+                <a [routerLink]="['/details', villa.id]" class="villa-title-link">{{ villa.name }}</a>
+                <span class="villa-meta-info" *ngIf="villa.sqft">
+                  {{ villa.sqft | number }} sq. ft.
+                </span>
+                <p class="villa-desc-excerpt" *ngIf="villa.description">
+                  {{ villa.description.length > 80 ? (villa.description | slice:0:80) + '...' : villa.description }}
+                </p>
+              </div>
+            </td>
+
+            <td class="td-category">
+              <span class="category-badge" [attr.data-type]="villa.propertyType || 'Villa'">
+                {{ formatCategory(villa.propertyType) }}
+              </span>
+            </td>
+
+            <td class="td-occupancy">
+              <span class="pill-badge">
+                <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                {{ villa.occupancy }} Guests
+              </span>
+            </td>
+
+            <td class="td-price">
+              <div class="price-cell">
+                <strong>Rs. {{ villa.price | number:'1.2-2' }}</strong>
+                <small>per night</small>
+              </div>
+            </td>
+
+            <td class="td-actions">
+              <div class="action-buttons">
+                <button
+                  type="button"
+                  class="action-btn view-action"
+                  (click)="viewVilla(villa.id)"
+                  title="View property details"
+                >
+                  View
+                </button>
+                <button
+                  type="button"
+                  class="action-btn edit-action"
+                  (click)="editVilla(villa.id)"
+                  title="Edit property"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  class="action-btn delete-action"
+                  (click)="requestDelete(villa)"
+                  title="Delete property"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- No results match search/filter -->
+          <tr *ngIf="filteredVillas.length === 0">
+            <td colspan="6" class="no-results-cell">
+              <p>No properties found matching your current filter / search criteria.</p>
+              <button type="button" class="btn btn-secondary btn-sm" (click)="searchTerm = ''; selectedCategory = 'All'; applyFilter()">
+                Reset Filters
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty Table State -->
+    <div class="empty-state" *ngIf="!loading && !errorMessage && villas.length === 0">
+      <h3>No properties registered</h3>
+      <p>Get started by adding your first luxury listing to the system.</p>
+      <button type="button" class="btn btn-primary" (click)="openCreateModal()">+ Add Property</button>
+    </div>
+  </section>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-backdrop" *ngIf="pendingDelete">
+    <div class="confirm-modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <p class="eyebrow">Confirm Deletion</p>
+        <h2>Delete "{{ pendingDelete.name }}"?</h2>
+      </div>
+      <p>
+        Are you sure you want to permanently delete this property (ID: #{{ pendingDelete.id }})?
+        This write operation requires administrator rights and cannot be undone.
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="cancel-btn" (click)="cancelDelete()" [disabled]="deleting">
+          Cancel
+        </button>
+        <button type="button" class="delete-btn" (click)="confirmDelete()" [disabled]="deleting">
+          {{ deleting ? 'Deleting...' : 'Delete Property' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Create Villa Modal -->
+  <div class="modal-backdrop" *ngIf="showCreateModal">
+    <div class="create-modal-content" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <p class="eyebrow">New Listing</p>
+        <h2>Create Property</h2>
+        <button type="button" class="close-x-btn" (click)="closeCreateModal()">✕</button>
+      </div>
+
+      <form (ngSubmit)="submitCreateModal()" #modalForm="ngForm" class="modal-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="modal-name">Property Name *</label>
+            <input
+              id="modal-name"
+              type="text"
+              name="name"
+              [(ngModel)]="newVilla.name"
+              placeholder="e.g. Royal Azure Retreat"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="modal-category">Property Category *</label>
+            <select
+              id="modal-category"
+              name="propertyType"
+              [(ngModel)]="newVilla.propertyType"
+              required
+            >
+              <option value="Villa">Villa</option>
+              <option value="HotelRoom">Hotel Room</option>
+              <option value="Apartment">Apartment</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="modal-price">Price Per Night (Rs.) *</label>
+            <input
+              id="modal-price"
+              type="number"
+              name="price"
+              [(ngModel)]="newVilla.price"
+              min="1"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="modal-occupancy">Max Occupancy (Guests) *</label>
+            <input
+              id="modal-occupancy"
+              type="number"
+              name="occupancy"
+              [(ngModel)]="newVilla.occupancy"
+              min="1"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="modal-sqft">Square Feet *</label>
+            <input
+              id="modal-sqft"
+              type="number"
+              name="sqft"
+              [(ngModel)]="newVilla.sqft"
+              min="1"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="modal-image">Image URL</label>
+            <input
+              id="modal-image"
+              type="url"
+              name="imageUrl"
+              [(ngModel)]="newVilla.imageUrl"
+              placeholder="https://images.unsplash.com/..."
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="modal-amenities">Amenities (comma separated)</label>
+          <input
+            id="modal-amenities"
+            type="text"
+            name="amenities"
+            [(ngModel)]="newVilla.amenities"
+            placeholder="Infinity Pool, Ocean View, Private Chef"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="modal-desc">Description</label>
+          <textarea
+            id="modal-desc"
+            name="description"
+            rows="3"
+            [(ngModel)]="newVilla.description"
+            placeholder="Describe what makes this stay extraordinary..."
+          ></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeCreateModal()" [disabled]="submittingCreate">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="submittingCreate || !newVilla.name">
+            {{ submittingCreate ? 'Saving Property...' : 'Save Property' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

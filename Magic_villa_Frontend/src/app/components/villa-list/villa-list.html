@@ -1,0 +1,142 @@
+<div class="page-container villa-catalogue">
+  <!-- Hero Section -->
+  <section class="catalogue-hero">
+    <div class="catalogue-intro">
+      <p class="eyebrow">Curated escapes</p>
+      <h1>Find your next <em>private stay.</em></h1>
+      <p>Browse thoughtfully selected villas, boutique hotel rooms, and luxury apartments made for slow mornings, long weekends, and memorable celebrations.</p>
+    </div>
+    <button *ngIf="auth.isAdmin()" class="add-btn" (click)="createVilla()">+ Add Property</button>
+  </section>
+
+  <!-- Interactive Discovery Controls: Search & Category Synergy -->
+  <section class="discovery-controls">
+    <div class="search-box-wrapper">
+      <svg class="search-box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search stays by title, amenities, or details (e.g. pool, beachfront)..."
+        [formControl]="searchControl"
+      />
+      <button
+        *ngIf="searchControl.value"
+        type="button"
+        class="search-clear-btn"
+        (click)="clearSearch()"
+        title="Clear search"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Category Pill Filter Tabs -->
+    <div class="category-pills">
+      <button
+        *ngFor="let cat of categories"
+        type="button"
+        class="category-pill-btn"
+        [class.active]="selectedCategory() === cat"
+        (click)="setCategory(cat)"
+      >
+        {{ formatCategory(cat) }}
+      </button>
+    </div>
+  </section>
+
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="empty-state catalogue-message">
+    <span class="loading-orb"></span>
+    <p>Searching curated collection...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading() && errorMessage()" class="empty-state catalogue-message catalogue-error">
+    <h2>Unable to load properties</h2>
+    <p>{{ errorMessage() }}</p>
+    <button type="button" class="retry-btn" (click)="setCategory(selectedCategory())">Retry</button>
+  </div>
+
+  <!-- Toolbar Summary -->
+  <section class="catalogue-toolbar" *ngIf="!loading() && !errorMessage() && villas().length">
+    <p>
+      <strong>{{ villas().length }}</strong>
+      <span> {{ villas().length === 1 ? 'stay' : 'stays' }} available</span>
+      <ng-container *ngIf="searchControl.value">
+        &bull; matching "<em>{{ searchControl.value }}</em>"
+      </ng-container>
+    </p>
+    <span class="status-indicator">Instant booking ready</span>
+  </section>
+
+  <!-- Villa Grid -->
+  <div class="villa-grid" *ngIf="!loading() && !errorMessage() && villas().length">
+    <article class="villa-card" *ngFor="let villa of villas()">
+      <div class="villa-card__visual">
+        <span class="availability">Available now</span>
+        <span class="category-tag">{{ formatCategory(villa.propertyType) }}</span>
+      </div>
+
+      <div class="villa-content">
+        <h2>{{ villa.name }}</h2>
+        <p class="listing-copy">{{ villa.description || 'A comfortable private retreat designed for an unhurried stay.' }}</p>
+
+        <div class="villa-info">
+          <span><b>Rs. {{ villa.price | number }}</b><small>per night</small></span>
+          <span><b>{{ villa.sqft | number }}</b><small>square feet</small></span>
+          <span><b>{{ villa.occupancy }}</b><small>guests</small></span>
+        </div>
+
+        <div class="actions">
+          <button class="details-btn" (click)="viewDetails(villa.id)">View stay</button>
+          <ng-container *ngIf="auth.isAdmin()">
+            <button class="edit-btn" (click)="editVilla(villa.id)">Edit</button>
+            <button class="delete-btn" (click)="requestDelete(villa)">Delete</button>
+          </ng-container>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <!-- Empty Filter State -->
+  <div class="empty-state catalogue-empty" *ngIf="!loading() && !errorMessage() && !villas().length">
+    <h2>No properties found</h2>
+    <p *ngIf="searchControl.value">
+      No properties matched your search for "<strong>{{ searchControl.value }}</strong>"
+      <span *ngIf="selectedCategory() !== 'All'"> under category <em>{{ formatCategory(selectedCategory()) }}</em></span>.
+    </p>
+    <p *ngIf="!searchControl.value && selectedCategory() !== 'All'">
+      We do not have any properties listed under {{ formatCategory(selectedCategory()) }} at the moment.
+    </p>
+    <p *ngIf="!searchControl.value && selectedCategory() === 'All'">
+      No properties have been added yet.
+    </p>
+
+    <div class="empty-actions">
+      <button *ngIf="searchControl.value || selectedCategory() !== 'All'" type="button" class="retry-btn" (click)="clearSearch(); setCategory('All')">
+        Clear Search & Filters
+      </button>
+      <button *ngIf="auth.isAdmin() && !searchControl.value && selectedCategory() === 'All'" class="add-btn" (click)="createVilla()">
+        Add your first property
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-backdrop" *ngIf="pendingDelete">
+  <section class="confirm-modal" role="dialog" aria-modal="true">
+    <p class="eyebrow">Delete listing</p>
+    <h2>Remove {{ pendingDelete.name }}?</h2>
+    <p>This action cannot be undone. The property will no longer appear in the catalogue.</p>
+    <div class="modal-actions">
+      <button class="cancel-btn" (click)="cancelDelete()">Keep property</button>
+      <button class="delete-btn" [disabled]="deleting" (click)="confirmDelete()">
+        {{ deleting ? 'Removing...' : 'Delete property' }}
+      </button>
+    </div>
+  </section>
+</div>

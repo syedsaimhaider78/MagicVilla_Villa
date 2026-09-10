@@ -1,0 +1,83 @@
+<div class="details-container">
+  <button class="back-btn" (click)="goBack()">← Back to Villas</button>
+
+  <div class="loading-state" *ngIf="loading">
+    <p>Loading villa details...</p>
+  </div>
+
+  <div class="error-state" *ngIf="!loading && (errorMessage || !villa)">
+    <h2>Villa Not Found</h2>
+    <p>{{ errorMessage }}</p>
+  </div>
+
+  <div class="details-card" *ngIf="!loading && villa">
+    <div class="card-header">
+      <span class="badge">Villa #{{ villa.id }}</span>
+      <h1>{{ villa.name }}</h1>
+      <p>{{ villa.description }}</p>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-text">
+          <label>Rate</label>
+          <strong>Rs. {{ villa.price | number }} / night</strong>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-text">
+          <label>Space</label>
+          <strong>{{ villa.sqft | number }} sq ft</strong>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-text">
+          <label>Guests</label>
+          <strong>{{ villa.occupancy }} guests</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking Panel -->
+    <section class="booking-panel" *ngIf="!booked">
+      <p class="eyebrow">Reserve your stay</p>
+      <h2>Choose your dates</h2>
+
+      <div class="booking-dates">
+        <label>Check in
+          <input type="date" [(ngModel)]="checkIn" (ngModelChange)="onDatesChange()" [min]="today" />
+        </label>
+        <label>Check out
+          <input type="date" [(ngModel)]="checkOut" (ngModelChange)="onDatesChange()" [min]="checkIn || today" />
+        </label>
+      </div>
+
+      <div class="booking-total">
+        <span>{{ nights || 0 }} nights</span>
+        <strong>Rs. {{ total | number }}</strong>
+      </div>
+
+      <!-- Conflict / Error Notification Banner -->
+      <div class="booking-conflict-banner" *ngIf="bookingError">
+        <svg class="conflict-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <p>{{ bookingError }}</p>
+      </div>
+
+      <button class="primary-btn" [disabled]="booking || !nights" (click)="reserve()">
+        {{ booking ? 'Confirming...' : 'Reserve this villa' }}
+      </button>
+    </section>
+
+    <!-- Booking Success -->
+    <section class="booking-success" *ngIf="booked">
+      <p class="eyebrow">Reservation received</p>
+      <h2>Your villa stay is pending confirmation</h2>
+      <p>{{ nights }} nights · Rs. {{ total | number }}</p>
+      <button class="primary-btn" routerLink="/bookings">View my bookings</button>
+    </section>
+  </div>
+</div>

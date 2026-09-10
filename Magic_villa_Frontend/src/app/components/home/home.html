@@ -1,0 +1,75 @@
+<div class="landing-page">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <span class="hero-tag">Luxury Living & Stays</span>
+      <h1>Experience The Perfect Escape In A Premium Villa</h1>
+      <p>Handcrafted private spaces with world-class amenities for family getaways, private retreats, and celebrations.</p>
+
+      <div class="hero-cta">
+        <a routerLink="/villas" class="cta-primary">Explore All Villas</a>
+        <a routerLink="/villas" class="cta-secondary">Book a Villa</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Stats / Feature highlights -->
+  <section class="features-bar">
+    <div class="stat-box">
+      <div class="stat-icon">🏊‍♂️</div>
+      <div>
+        <h4>Private Pools</h4>
+        <p>Heated & maintained daily</p>
+      </div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">🔒</div>
+      <div>
+        <h4>Secure & Private</h4>
+        <p>Gated perimeters & 24/7 care</p>
+      </div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">⚡</div>
+      <div>
+        <h4>Instant Confirmation</h4>
+        <p>Hassle-free direct booking</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Villas Section -->
+  <section class="featured-section">
+    <div class="section-header">
+      <div>
+        <h2>Featured Retreats</h2>
+        <p>Top-rated selections available for immediate reservation</p>
+      </div>
+      <a routerLink="/villas" class="view-all-link">Browse Catalog &rarr;</a>
+    </div>
+
+    <div *ngIf="loading" class="loading-box">
+      <p>Loading premier stays...</p>
+    </div>
+
+    <div class="grid" *ngIf="!loading && featuredVillas.length > 0">
+      <div class="card" *ngFor="let villa of featuredVillas">
+        <div class="card-media">
+          <img [src]="villa.imageUrl || 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80'" [alt]="villa.name">
+          <span class="price-tag">Rs. {{ villa.price }} <span>/ night</span></span>
+        </div>
+        <div class="card-body">
+          <h3>{{ villa.name }}</h3>
+          <p class="desc">{{ villa.description || 'Spacious luxury villa with panoramic views and modern styling.' }}</p>
+          <div class="meta">
+            <span>👥 {{ villa.occupancy }} Guests</span>
+            <span>📐 {{ villa.sqft }} sq ft</span>
+          </div>
+          <div class="card-footer">
+            <a [routerLink]="['/details', villa.id]" class="btn-card-primary">View Villa</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

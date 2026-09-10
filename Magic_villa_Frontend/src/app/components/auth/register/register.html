@@ -1,0 +1,36 @@
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h2>Create Account</h2>
+      <p>Join MagicVilla to discover and reserve private luxury stays</p>
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+    <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+
+    <form (ngSubmit)="onSubmit()" #regForm="ngForm">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" [(ngModel)]="user.name" placeholder="John Doe" required />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" [(ngModel)]="user.email" placeholder="name@example.com" required />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password (Min 6 Characters)</label>
+        <input type="password" id="password" name="password" [(ngModel)]="user.password" minlength="6" placeholder="••••••••" required />
+      </div>
+
+      <button type="submit" class="btn-submit" [disabled]="!regForm.form.valid || loading">
+        {{ loading ? 'Creating Account...' : 'Create Account' }}
+      </button>
+
+      <p class="auth-footer">
+        Already have an account? <a routerLink="/login">Sign In here</a>
+      </p>
+    </form>
+  </div>
+</div>

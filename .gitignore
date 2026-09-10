@@ -1,0 +1,16 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.vsidx
+bin/
+obj/
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+
+# Archives
+*.rar
+*.zip

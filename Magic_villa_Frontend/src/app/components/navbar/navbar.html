@@ -1,0 +1,67 @@
+<header class="site-header">
+  <div class="nav-container">
+    <a routerLink="/" class="brand">
+      <span class="brand-badge">MV</span>
+      <span class="brand-text">Magic<span>Villa</span></span>
+    </a>
+    <nav class="nav-links">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">Home</a>
+      <a routerLink="/villas" routerLinkActive="active">Explore Villas</a>
+      <a *ngIf="auth.isLoggedIn()" routerLink="/bookings" routerLinkActive="active">My Bookings</a>
+      <a *ngIf="auth.isAdmin()" routerLink="/admin/dashboard" routerLinkActive="active">Admin Panel</a>
+    </nav>
+    <div class="nav-actions">
+      <!-- Notification Bell with Signal Badge and Dropdown Panel -->
+      <div class="notif-wrapper bell-wrapper">
+        <button type="button" class="notif-button" (click)="toggleDropdown()" aria-label="Notifications">
+          <svg class="notif-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          @if (notificationService.unreadCount() > 0) {
+            <span class="notif-badge">
+              {{ notificationService.unreadCount() }}
+            </span>
+          }
+        </button>
+
+        @if (isDropdownOpen()) {
+          <div class="notif-dropdown">
+            <div class="notif-header">
+              <span class="notif-title">Notifications</span>
+              <button type="button" (click)="notificationService.markAllAsRead()" class="notif-mark-all">
+                Mark all as read
+              </button>
+            </div>
+
+            <div class="notif-list">
+              @for (item of notificationService.notifications(); track item.id) {
+                <div class="notif-item" [class.unread]="!item.read">
+                  <div class="notif-item-content">
+                    <p class="notif-item-title" [class.success]="item.type === 'success'" [class.error]="item.type === 'error'">
+                      {{ item.title }}
+                    </p>
+                    <p class="notif-item-message">{{ item.message }}</p>
+                  </div>
+                  <button type="button" (click)="notificationService.dismiss(item.id)" class="notif-item-dismiss" aria-label="Dismiss notification">✕</button>
+                </div>
+              } @empty {
+                <p class="notif-empty">No notifications yet</p>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <button type="button" class="theme-button" (click)="toggleDarkMode()" [attr.aria-label]="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'">{{ isDarkMode ? '☀' : '◐' }}</button>
+      <ng-container *ngIf="!auth.isLoggedIn(); else account">
+        <a routerLink="/login" class="btn btn-outline">Sign In</a>
+        <a routerLink="/register" class="btn btn-primary">Sign Up</a>
+      </ng-container>
+      <ng-template #account>
+        <span class="nav-user">{{ auth.getUser()?.name }}</span>
+        <button class="btn btn-outline" type="button" (click)="logout()">Sign out</button>
+      </ng-template>
+    </div>
+  </div>
+</header>
