@@ -13,6 +13,7 @@ namespace MagicVilla_VillaAPI.Data
         public DbSet<Villa> Villas { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -43,6 +44,9 @@ namespace MagicVilla_VillaAPI.Data
                 .HasForeignKey(b => b.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            modelBuilder.Entity<ChatMessage>()
+                .HasIndex(c => new { c.GroupName, c.SentAt });
+
             // Seed Admin User (Password: Admin@123)
             modelBuilder.Entity<User>().HasData(
                 new User
@@ -55,7 +59,6 @@ namespace MagicVilla_VillaAPI.Data
                     CreatedDate = new DateTime(2026, 8, 21, 0, 0, 0, DateTimeKind.Utc)
                 }
             );
-           
         }
     }
 }

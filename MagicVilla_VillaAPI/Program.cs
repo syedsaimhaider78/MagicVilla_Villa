@@ -58,7 +58,10 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+
 builder.Services.AddSignalR();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -102,5 +105,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<MagicVilla_VillaAPI.Hubs.NotificationHub>("/hubs/notifications");
+app.MapHub<MagicVilla_VillaAPI.Hubs.ChatHub>("/Chat");
 
 app.Run();

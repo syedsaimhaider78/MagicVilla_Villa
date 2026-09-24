@@ -8,6 +8,7 @@ import { LoginComponent } from './components/auth/register/login/login';
 import { RegisterComponent } from './components/auth/register/register';
 import { BookingsComponent } from './components/bookings/bookings';
 import { AdminDashboardComponent } from './components/admin/admin-dashboard/admin-dashboard';
+import { StaffChatComponent } from './components/staff-chat/staff-chat';
 import { authGuard } from './guards/auth.guards';
 import { adminGuard } from './guards/admin.guard';
 
@@ -20,6 +21,8 @@ export const routes: Routes = [
   { path: 'details/:id', component: VillaDetailsComponent },
   { path: 'villa-edit/:id', component: VillaEditComponent, canActivate: [adminGuard] },
   { path: 'bookings', component: BookingsComponent, canActivate: [authGuard] },
+  { path: 'staff-chat', component: StaffChatComponent },
+  { path: 'chat', redirectTo: 'staff-chat', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: '**', redirectTo: '' }

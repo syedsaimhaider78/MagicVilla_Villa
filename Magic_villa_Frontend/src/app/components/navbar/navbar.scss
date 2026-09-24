@@ -96,6 +96,33 @@
   }
 }
 
+.chat-nav-btn {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid #0284c7;
+  border-radius: 10px;
+  background: #0369a1;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s ease;
+
+  svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  &:hover, &.active {
+    background: #0284c7;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+  }
+}
+
 .notif-wrapper {
   position: relative;
   display: inline-flex;

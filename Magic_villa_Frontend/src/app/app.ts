@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './components/navbar/navbar';
 import { ToastComponent } from './components/toast/toast';
 import { SignalRService } from './services/signalr.service';
+import { ChatService } from './services/chat';
 
 @Component({
   selector: 'app-root',
@@ -12,8 +13,10 @@ import { SignalRService } from './services/signalr.service';
 })
 export class App implements OnInit {
   private signalrService = inject(SignalRService);
+  private chatService = inject(ChatService);
 
   ngOnInit(): void {
     this.signalrService.startConnection();
+    this.chatService.startConnection();
   }
 }

@@ -8,9 +8,17 @@
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">Home</a>
       <a routerLink="/villas" routerLinkActive="active">Explore Villas</a>
       <a *ngIf="auth.isLoggedIn()" routerLink="/bookings" routerLinkActive="active">My Bookings</a>
+      <a routerLink="/staff-chat" routerLinkActive="active">Staff Chat</a>
       <a *ngIf="auth.isAdmin()" routerLink="/admin/dashboard" routerLinkActive="active">Admin Panel</a>
     </nav>
     <div class="nav-actions">
+      <!-- Staff Chat Shortcut -->
+      <a routerLink="/staff-chat" class="chat-nav-btn" routerLinkActive="active" title="Staff Chat" aria-label="Staff Chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </a>
+
       <!-- Notification Bell with Signal Badge and Dropdown Panel -->
       <div class="notif-wrapper bell-wrapper">
         <button type="button" class="notif-button" (click)="toggleDropdown()" aria-label="Notifications">
