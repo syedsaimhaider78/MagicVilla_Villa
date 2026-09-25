@@ -330,6 +330,37 @@
     }
   }
 
+  .channel-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-channel-call {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: var(--primary);
+    color: #fff;
+    border: 1px solid var(--primary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+  }
+
   .btn-switch-channel {
     display: inline-flex;
     align-items: center;

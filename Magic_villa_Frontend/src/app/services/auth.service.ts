@@ -26,6 +26,21 @@ export class AuthService {
     return this.http.post<UserResponse>(`${this.apiUrl}/login`, credentials).pipe(
       tap(user => {
         localStorage.setItem('mv_user', JSON.stringify(user));
+        if (user?.token) {
+          localStorage.setItem('token', user.token);
+        }
+        this.currentUserSubject.next(user);
+      })
+    );
+  }
+
+  googleLogin(idToken: string): Observable<UserResponse> {
+    return this.http.post<UserResponse>(`${this.apiUrl}/google-login`, { idToken }).pipe(
+      tap(user => {
+        localStorage.setItem('mv_user', JSON.stringify(user));
+        if (user?.token) {
+          localStorage.setItem('token', user.token);
+        }
         this.currentUserSubject.next(user);
       })
     );
@@ -101,6 +116,35 @@ export class AuthService {
     }
 
     return false;
+  }
+
+  getUserId(): string {
+    const user = this.getUser();
+    if (user?.id) {
+      return String(user.id);
+    }
+    if (user?.token) {
+      const decoded = this.decodeToken(user.token);
+      const id =
+        decoded?.['nameid'] ||
+        decoded?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ||
+        decoded?.['sub'] ||
+        decoded?.['id'];
+      if (id) {
+        return String(id);
+      }
+    }
+    if (user?.name) {
+      return user.name;
+    }
+    return '';
+  }
+
+  isStaff(): boolean {
+    const user = this.getUser();
+    if (!user) return false;
+    const role = (this.getRole() || user.role || '').toLowerCase();
+    return role === 'staff' || role === 'admin';
   }
 
   private getUserFromStorage(): UserResponse | null {

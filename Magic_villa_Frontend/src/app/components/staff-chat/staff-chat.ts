@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService, ChatMessage } from '../../services/chat';
 import { AuthService } from '../../services/auth.service';
+import { CallService } from '../../services/call.service';
 
 @Component({
   selector: 'app-staff-chat',
@@ -13,6 +14,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class StaffChatComponent implements OnInit, AfterViewChecked {
   public chatService = inject(ChatService);
+  public callService = inject(CallService);
   private authService = inject(AuthService);
 
   @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;

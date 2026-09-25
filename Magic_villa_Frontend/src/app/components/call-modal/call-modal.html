@@ -1,0 +1,238 @@
+<!-- 1. Incoming Call Modal -->
+<div *ngIf="callService.callState() === 'ringing'" class="call-backdrop">
+  <div class="call-card incoming-card">
+    <div class="call-pulse-ring">
+      <div class="pulse-wave"></div>
+      <div class="pulse-wave wave-2"></div>
+      <div class="avatar-ring">
+        <span class="avatar-initial">{{ callService.activePeer()?.name?.charAt(0)?.toUpperCase() || 'A' }}</span>
+      </div>
+    </div>
+
+    <div class="caller-meta">
+      <span class="incoming-label">Incoming Audio Call</span>
+      <h3 class="caller-name">{{ callService.activePeer()?.name || 'Caller' }}</h3>
+      <span class="caller-role-badge">{{ callService.activePeer()?.role || 'Guest' }}</span>
+    </div>
+
+    <div class="call-actions-row">
+      <button class="btn-call-action btn-decline" (click)="callService.rejectCall('Call declined by user')" title="Decline Call">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.8 19.8 0 0 1-3.12-8.66A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
+          <line x1="23" y1="1" x2="1" y2="23"></line>
+        </svg>
+        <span>Decline</span>
+      </button>
+
+      <button class="btn-call-action btn-accept" (click)="callService.acceptCall()" title="Accept Audio Call">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+        </svg>
+        <span>Accept</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Outgoing Calling Modal -->
+<div *ngIf="callService.callState() === 'calling'" class="call-backdrop">
+  <div class="call-card outgoing-card">
+    <div class="call-pulse-ring">
+      <div class="pulse-wave"></div>
+      <div class="avatar-ring">
+        <span class="avatar-initial">{{ callService.activePeer()?.name?.charAt(0)?.toUpperCase() || 'C' }}</span>
+      </div>
+    </div>
+
+    <div class="caller-meta">
+      <span class="incoming-label">Calling...</span>
+      <h3 class="caller-name">{{ callService.activePeer()?.name || 'Contact' }}</h3>
+      <span class="caller-role-badge">{{ callService.activePeer()?.role || 'User' }}</span>
+    </div>
+
+    <div class="call-actions-row">
+      <button class="btn-call-action btn-decline" (click)="callService.endCall()" title="Cancel Call">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.8 19.8 0 0 1-3.12-8.66A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
+          <line x1="23" y1="1" x2="1" y2="23"></line>
+        </svg>
+        <span>End Call</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Active Call Floating Widget (When Connected) -->
+<div *ngIf="callService.callState() === 'connected'" class="active-call-floating-bar">
+  <div class="active-peer-info">
+    <div class="peer-avatar">
+      {{ callService.activePeer()?.name?.charAt(0)?.toUpperCase() || 'P' }}
+    </div>
+    <div class="peer-text">
+      <span class="peer-name">{{ callService.activePeer()?.name }}</span>
+      <div class="call-status-indicator">
+        <span class="live-dot"></span>
+        <span class="duration-counter">{{ callService.getFormattedDuration() }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Wave Animation -->
+  <div class="audio-wave">
+    <span class="bar bar-1"></span>
+    <span class="bar bar-2"></span>
+    <span class="bar bar-3"></span>
+    <span class="bar bar-4"></span>
+    <span class="bar bar-5"></span>
+  </div>
+
+  <div class="active-call-controls">
+    <!-- Mute / Unmute Button -->
+    <button 
+      class="control-btn" 
+      [class.muted]="callService.isMuted()" 
+      (click)="callService.toggleMute()" 
+      [title]="callService.isMuted() ? 'Unmute Microphone' : 'Mute Microphone'">
+      <svg *ngIf="!callService.isMuted()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+      </svg>
+      <svg *ngIf="callService.isMuted()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+        <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+        <line x1="12" y1="19" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+      </svg>
+    </button>
+
+    <!-- End Call Button -->
+    <button class="control-btn btn-end" (click)="callService.endCall()" title="End Audio Call">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.8 19.8 0 0 1-3.12-8.66A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
+        <line x1="23" y1="1" x2="1" y2="23"></line>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- 4. Contacts / Call Picker Modal -->
+<div *ngIf="callService.showContactsModal()" class="call-backdrop" (click)="callService.toggleContactsModal()">
+  <div class="contacts-card" (click)="$event.stopPropagation()">
+    <div class="contacts-header">
+      <div class="title-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="header-phone-icon">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+        </svg>
+        <h4>Direct Audio Calling</h4>
+      </div>
+      <div class="header-right-actions">
+        <button class="btn-refresh" (click)="refreshUsers()" [class.spinning]="isRefreshing()" title="Refresh Connected Users">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+        <button class="btn-close" (click)="callService.toggleContactsModal()" title="Close">✕</button>
+      </div>
+    </div>
+
+    <!-- Current User Identification Bar -->
+    <div class="my-status-bar">
+      <span class="status-live-dot"></span>
+      <span class="my-info-text">
+        You: <strong>{{ callService.myUserName() }}</strong>
+        <span class="my-id-badge">ID: #{{ callService.myUserId() }}</span>
+        <span class="my-role-badge" [ngClass]="getRoleBadgeClass(callService.myRole())">{{ callService.myRole() }}</span>
+      </span>
+    </div>
+
+    <!-- Client View: One-click Call Admin Desk -->
+    <div *ngIf="!isStaffOrAdmin()" class="client-call-box">
+      <div class="desk-info">
+        <h5>Front Desk & Admin Concierge</h5>
+        <p>Connect with villa operations and guest reception for instant assistance.</p>
+      </div>
+      <button class="btn-call-desk" (click)="callAdminDirectly()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+        </svg>
+        <span>Call Admin Desk Now</span>
+      </button>
+    </div>
+
+    <!-- Connected Users List (Available for Admin, Staff, and direct callers) -->
+    <div class="admin-contacts-list">
+      <div class="contacts-list-header">
+        <span class="contacts-subtitle">
+          {{ isStaffOrAdmin() ? 'Connected Users (' + getAvailableContacts().length + ')' : 'Available Staff & Admins (' + getAvailableContacts().length + ')' }}
+        </span>
+        <div class="search-box" *ngIf="callService.onlineUsers().length > 3">
+          <input 
+            type="text" 
+            [ngModel]="searchTerm()" 
+            (ngModelChange)="searchTerm.set($event)" 
+            placeholder="Search by name, ID or role..." 
+            class="input-search-users" />
+        </div>
+      </div>
+
+      <div *ngIf="getAvailableContacts().length === 0" class="no-contacts-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <line x1="23" y1="11" x2="17" y2="11"></line>
+        </svg>
+        <p>No other users currently connected to call service.</p>
+        <span class="sub-hint">When another staff or client opens the site, they will appear here with their ID automatically.</span>
+        <button class="btn-hint-refresh" (click)="refreshUsers()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Refresh Now
+        </button>
+      </div>
+
+      <div class="contacts-scroll-area" *ngIf="getAvailableContacts().length > 0">
+        <div class="contact-item" *ngFor="let contact of getAvailableContacts()">
+          <div class="contact-left">
+            <div class="contact-avatar" [ngClass]="getRoleBadgeClass(contact.role)">
+              {{ contact.userName.charAt(0).toUpperCase() }}
+            </div>
+            <div class="contact-details">
+              <div class="name-id-row">
+                <span class="contact-name">{{ contact.userName }}</span>
+                <span class="contact-id-badge" title="Unique User ID">ID: #{{ contact.userId }}</span>
+              </div>
+              <div class="role-status-row">
+                <span class="contact-role" [ngClass]="getRoleBadgeClass(contact.role)">
+                  {{ contact.role }}
+                </span>
+                <span class="contact-status" [class.is-busy]="contact.isBusy">
+                  <span class="status-dot"></span>
+                  {{ contact.isBusy ? 'On Call' : 'Available' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            class="btn-start-call" 
+            [disabled]="contact.isBusy" 
+            (click)="callContact(contact)"
+            [title]="contact.isBusy ? 'User is on another call' : 'Call ' + contact.userName">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            <span>{{ contact.isBusy ? 'Busy' : 'Call' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

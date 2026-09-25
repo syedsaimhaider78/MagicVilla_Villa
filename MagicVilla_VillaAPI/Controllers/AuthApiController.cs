@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Google.Apis.Auth;
 using MagicVilla_VillaAPI.Data;
 using MagicVilla_VillaAPI.DTO;
 using MagicVilla_VillaAPI.Models;
@@ -12,6 +13,7 @@ namespace MagicVilla_VillaAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Route("api/UsersAuth")]
     public class AuthApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -100,7 +102,7 @@ namespace MagicVilla_VillaAPI.Controllers
                 isPasswordValid = false;
             }
 
-            if (!isPasswordValid && user.PasswordHash == dto.Password)
+            if (!isPasswordValid && !string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash == dto.Password)
             {
                 isPasswordValid = true;
             }
@@ -110,6 +112,71 @@ namespace MagicVilla_VillaAPI.Controllers
                 return Unauthorized(new { message = "Invalid email or password." });
             }
 
+            return Ok(GenerateJwtTokenResponse(user));
+        }
+
+        [HttpPost("google-login")]
+        public async Task<ActionResult<LoginResponseDto>> GoogleLogin([FromBody] GoogleLoginDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.IdToken))
+            {
+                return BadRequest(new { message = "Google IdToken is required." });
+            }
+
+            GoogleJsonWebSignature.Payload payload;
+            try
+            {
+                var clientId = _config["GoogleAuthSettings:ClientId"];
+                var validationSettings = new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = !string.IsNullOrWhiteSpace(clientId) ? new[] { clientId } : null
+                };
+
+                payload = await GoogleJsonWebSignature.ValidateAsync(dto.IdToken, validationSettings);
+            }
+            catch (InvalidJwtException ex)
+            {
+                return Unauthorized(new { message = "Invalid Google token.", error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Failed to validate Google token.", error = ex.Message });
+            }
+
+            if (payload == null || string.IsNullOrWhiteSpace(payload.Email))
+            {
+                return BadRequest(new { message = "Google token did not contain a valid email address." });
+            }
+
+            var email = payload.Email.Trim().ToLower();
+            var name = !string.IsNullOrWhiteSpace(payload.Name)
+                ? payload.Name.Trim()
+                : (!string.IsNullOrWhiteSpace(payload.GivenName) ? payload.GivenName.Trim() : email);
+
+            // Query database to check if user exists by Email/UserName
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
+
+            if (user == null)
+            {
+                // Auto-register user with default "Customer" role and empty password
+                user = new User
+                {
+                    Name = name,
+                    Email = email,
+                    PasswordHash = string.Empty,
+                    Role = "Customer",
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(GenerateJwtTokenResponse(user));
+        }
+
+        private LoginResponseDto GenerateJwtTokenResponse(User user)
+        {
             var userRole = string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase) ? "Admin" : "Customer";
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -131,13 +198,13 @@ namespace MagicVilla_VillaAPI.Controllers
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
-            return Ok(new LoginResponseDto
+            return new LoginResponseDto
             {
                 Token = tokenHandler.WriteToken(token),
                 Name = user.Name,
                 Email = user.Email,
                 Role = userRole
-            });
+            };
         }
     }
 }

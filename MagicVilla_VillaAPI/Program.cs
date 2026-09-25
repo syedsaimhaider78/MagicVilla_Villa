@@ -106,5 +106,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<MagicVilla_VillaAPI.Hubs.NotificationHub>("/hubs/notifications");
 app.MapHub<MagicVilla_VillaAPI.Hubs.ChatHub>("/Chat");
+app.MapHub<MagicVilla_VillaAPI.Hubs.CallHub>("/hubs/call");
 
 app.Run();

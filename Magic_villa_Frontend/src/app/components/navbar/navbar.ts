@@ -3,6 +3,7 @@ import { CommonModule, DOCUMENT } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { CallService } from '../../services/call.service';
 
 @Component({
   selector: 'app-navbar',
@@ -14,6 +15,7 @@ import { NotificationService } from '../../services/notification.service';
 export class NavbarComponent {
   public auth = inject(AuthService);
   public notificationService = inject(NotificationService);
+  public callService = inject(CallService);
   private router = inject(Router);
   private renderer = inject(Renderer2);
   private document = inject(DOCUMENT);

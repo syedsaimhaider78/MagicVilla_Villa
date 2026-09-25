@@ -190,8 +190,8 @@ body.dark-mode {
 .brand .brand-text span { color: #dce7ae !important; }
 .nav-links a { color: #e2e4ca !important; }
 .nav-links a:hover, .nav-links a.active { color: #fffdf6 !important; }
-.theme-button { background: #536236 !important; border-color: #aebd75 !important; }
-.theme-button:hover { background: #687943 !important; }
+.theme-button, .chat-nav-btn { background: #536236 !important; border-color: #aebd75 !important; }
+.theme-button:hover, .chat-nav-btn:hover, .chat-nav-btn.active { background: #687943 !important; }
 .btn-outline { color: #fffdf6 !important; border-color: #c3cf94 !important; }
 
 .hero-section { background: linear-gradient(135deg, #3e4a27 0%, #687842 100%) !important; }
@@ -203,7 +203,7 @@ body.dark-mode {
 .featured-section .btn-card-primary:hover { background: #3f4b29 !important; }
 
 body.dark-mode .site-header { background: rgba(23, 27, 18, .94) !important; }
-body.dark-mode .theme-button { background: var(--surface-muted) !important; border-color: var(--border-color) !important; }
+body.dark-mode .theme-button, body.dark-mode .chat-nav-btn { background: var(--surface-muted) !important; border-color: var(--border-color) !important; }
 body.dark-mode .hero-section { background: linear-gradient(135deg, #242d16 0%, #4a5930 100%) !important; }
 body.dark-mode .hero-section .hero-tag { background: rgba(181, 201, 120, .16) !important; color: #dce9aa !important; }
 body.dark-mode .hero-section .hero-cta .cta-primary { background: var(--primary) !important; color: #202719 !important; }
