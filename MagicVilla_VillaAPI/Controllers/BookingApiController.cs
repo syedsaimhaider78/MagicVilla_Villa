@@ -18,27 +18,44 @@ namespace MagicVilla_VillaAPI.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IWebHostEnvironment _environment;
 
-        public BookingApiController(ApplicationDbContext context, IHubContext<NotificationHub> hubContext)
+        public BookingApiController(
+            ApplicationDbContext context, 
+            IHubContext<NotificationHub> hubContext,
+            IWebHostEnvironment environment)
         {
             _context = context;
             _hubContext = hubContext;
+            _environment = environment;
         }
 
         private static BookingDto ToDto(Booking booking) => new()
         {
-            Id = booking.Id, VillaId = booking.VillaId, UserId = booking.UserId,
-            CustomerName = booking.CustomerName, CustomerEmail = booking.CustomerEmail,
-            VillaName = booking.Villa?.Name, CheckInDate = booking.CheckInDate,
-            CheckOutDate = booking.CheckOutDate, NumberOfNights = booking.NumberOfNights,
-            Price = booking.Price, Status = booking.Status
+            Id = booking.Id,
+            VillaId = booking.VillaId,
+            UserId = booking.UserId,
+            CustomerName = booking.CustomerName,
+            CustomerEmail = booking.CustomerEmail,
+            VillaName = booking.Villa?.Name,
+            CheckInDate = booking.CheckInDate,
+            CheckOutDate = booking.CheckOutDate,
+            NumberOfNights = booking.NumberOfNights,
+            Price = booking.Price,
+            Status = booking.Status,
+            PurposeOfVisit = booking.PurposeOfVisit,
+            DocumentUrl = booking.DocumentUrl,
+            CreatedDate = booking.CreatedDate
         };
 
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<BookingDto>>> GetBookings()
         {
-            var bookings = await _context.Bookings.Include(b => b.Villa).ToListAsync();
+            var bookings = await _context.Bookings
+                .Include(b => b.Villa)
+                .OrderByDescending(b => b.CreatedDate)
+                .ToListAsync();
             return Ok(bookings.Select(ToDto));
         }
 
@@ -47,14 +64,18 @@ namespace MagicVilla_VillaAPI.Controllers
         public async Task<ActionResult<IEnumerable<BookingDto>>> GetMyBookings()
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var bookings = await _context.Bookings.Include(b => b.Villa)
-                .Where(b => b.UserId == userId).OrderByDescending(b => b.CreatedDate).ToListAsync();
+            var bookings = await _context.Bookings
+                .Include(b => b.Villa)
+                .Where(b => b.UserId == userId)
+                .OrderByDescending(b => b.CreatedDate)
+                .ToListAsync();
             return Ok(bookings.Select(ToDto));
         }
 
         [Authorize]
         [HttpPost]
-        public async Task<ActionResult<BookingDto>> CreateBooking([FromBody] BookingDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<BookingDto>> CreateBooking([FromForm] BookingCreateDto dto)
         {
             var checkIn = dto.CheckInDate.Date;
             var checkOut = dto.CheckOutDate.Date;
@@ -65,12 +86,14 @@ namespace MagicVilla_VillaAPI.Controllers
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var user = await _context.Users.FindAsync(userId);
             var villa = await _context.Villas.FindAsync(dto.VillaId);
-            if (user == null || villa == null) return BadRequest(new { isSuccess = false, message = "Villa or user was not found." });
+            if (user == null || villa == null) 
+                return BadRequest(new { isSuccess = false, message = "Villa or user was not found." });
 
-            // Check for date overlap conflicts with existing non-cancelled bookings
+            // Check for date overlap conflicts with existing active bookings
             var conflictingBookings = await _context.Bookings
                 .Where(b => b.VillaId == dto.VillaId
                             && b.Status != "Cancelled"
+                            && b.Status != "Rejected"
                             && checkIn < b.CheckOutDate
                             && checkOut > b.CheckInDate)
                 .ToListAsync();
@@ -85,13 +108,62 @@ namespace MagicVilla_VillaAPI.Controllers
                 });
             }
 
+            // Handle optional document upload (Passport / CNIC - max 2MB)
+            string? documentUrl = null;
+            if (dto.Document != null && dto.Document.Length > 0)
+            {
+                const long maxFileSize = 2 * 1024 * 1024; // 2MB
+                if (dto.Document.Length > maxFileSize)
+                {
+                    return BadRequest(new { isSuccess = false, message = "Document attachment must be smaller than 2MB." });
+                }
+
+                var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".webp" };
+                var extension = Path.GetExtension(dto.Document.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(extension))
+                {
+                    return BadRequest(new { isSuccess = false, message = "Only PDF and image files (JPG, PNG, WEBP) are supported." });
+                }
+
+                var webRoot = _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                var uploadDir = Path.Combine(webRoot, "uploads", "documents");
+                if (!Directory.Exists(uploadDir))
+                {
+                    Directory.CreateDirectory(uploadDir);
+                }
+
+                var uniqueFileName = $"{Guid.NewGuid():N}{extension}";
+                var filePath = Path.Combine(uploadDir, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await dto.Document.CopyToAsync(stream);
+                }
+
+                documentUrl = $"/uploads/documents/{uniqueFileName}";
+            }
+
             var nights = (dto.CheckOutDate.Date - dto.CheckInDate.Date).Days;
+            var customerName = !string.IsNullOrWhiteSpace(dto.CustomerName) ? dto.CustomerName.Trim() : user.Name;
+            var customerEmail = !string.IsNullOrWhiteSpace(dto.CustomerEmail) ? dto.CustomerEmail.Trim() : user.Email;
+            var purpose = !string.IsNullOrWhiteSpace(dto.PurposeOfVisit) ? dto.PurposeOfVisit.Trim() : "Holidays";
+
             var booking = new Booking
             {
-                VillaId = villa.Id, UserId = user.Id, CustomerName = user.Name, CustomerEmail = user.Email,
-                CheckInDate = dto.CheckInDate.Date, CheckOutDate = dto.CheckOutDate.Date,
-                NumberOfNights = nights, Price = nights * villa.Price, Status = "Pending", CreatedDate = DateTime.UtcNow
+                VillaId = villa.Id,
+                UserId = user.Id,
+                CustomerName = customerName,
+                CustomerEmail = customerEmail,
+                CheckInDate = dto.CheckInDate.Date,
+                CheckOutDate = dto.CheckOutDate.Date,
+                NumberOfNights = nights,
+                Price = nights * villa.Price,
+                PurposeOfVisit = purpose,
+                DocumentUrl = documentUrl,
+                Status = "Pending",
+                CreatedDate = DateTime.UtcNow
             };
+
             _context.Bookings.Add(booking);
             await _context.SaveChangesAsync();
             booking.Villa = villa;
@@ -102,8 +174,8 @@ namespace MagicVilla_VillaAPI.Controllers
 
                 await _hubContext.Clients.All.SendAsync("ReceiveBookingNotification", new
                 {
-                    title = "New Booking Confirmed!",
-                    message = $"Reservation confirmed for {villa.Name ?? "Villa #" + booking.VillaId} by {booking.CustomerName ?? "Guest"}.",
+                    title = "New Booking Request Received!",
+                    message = $"New reservation request for {villa.Name ?? "Villa #" + booking.VillaId} by {booking.CustomerName} ({booking.PurposeOfVisit}). Awaiting review.",
                     timestamp = DateTime.UtcNow,
                     bookingId = booking.Id
                 });
@@ -127,13 +199,67 @@ namespace MagicVilla_VillaAPI.Controllers
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateBooking(int id, [FromBody] BookingDto dto)
         {
-            if (dto.Status is not ("Pending" or "Confirmed" or "Cancelled"))
+            var validStatuses = new[] { "Pending", "Approved", "Confirmed", "Rejected", "Cancelled", "Completed" };
+            if (!validStatuses.Contains(dto.Status, StringComparer.OrdinalIgnoreCase))
                 return BadRequest(new { message = "Invalid reservation status." });
-            var booking = await _context.Bookings.FindAsync(id);
+
+            var booking = await _context.Bookings.Include(b => b.Villa).FirstOrDefaultAsync(b => b.Id == id);
             if (booking == null) return NotFound();
+
             booking.Status = dto.Status;
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("ReceiveBookingNotification", new
+            {
+                title = $"Booking {dto.Status}",
+                message = $"Reservation #{booking.Id} for {booking.Villa?.Name ?? "Villa"} was updated to {dto.Status}.",
+                timestamp = DateTime.UtcNow,
+                bookingId = booking.Id
+            });
+
             return NoContent();
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id:int}/approve")]
+        public async Task<IActionResult> ApproveBooking(int id)
+        {
+            var booking = await _context.Bookings.Include(b => b.Villa).FirstOrDefaultAsync(b => b.Id == id);
+            if (booking == null) return NotFound();
+
+            booking.Status = "Approved";
+            await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("ReceiveBookingNotification", new
+            {
+                title = "Booking Approved!",
+                message = $"Reservation #{booking.Id} for {booking.CustomerName} ({booking.Villa?.Name}) has been approved.",
+                timestamp = DateTime.UtcNow,
+                bookingId = booking.Id
+            });
+
+            return Ok(new { isSuccess = true, message = "Reservation approved successfully.", booking = ToDto(booking) });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id:int}/reject")]
+        public async Task<IActionResult> RejectBooking(int id, [FromBody] BookingStatusUpdateDto? dto)
+        {
+            var booking = await _context.Bookings.Include(b => b.Villa).FirstOrDefaultAsync(b => b.Id == id);
+            if (booking == null) return NotFound();
+
+            booking.Status = "Rejected";
+            await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("ReceiveBookingNotification", new
+            {
+                title = "Booking Rejected",
+                message = $"Reservation #{booking.Id} for {booking.CustomerName} has been rejected.",
+                timestamp = DateTime.UtcNow,
+                bookingId = booking.Id
+            });
+
+            return Ok(new { isSuccess = true, message = "Reservation rejected.", booking = ToDto(booking) });
         }
     }
 }

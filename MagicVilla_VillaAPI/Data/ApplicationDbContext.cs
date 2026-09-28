@@ -33,6 +33,14 @@ namespace MagicVilla_VillaAPI.Data
                 .HasPrecision(18, 2);
 
             modelBuilder.Entity<Booking>()
+                .Property(b => b.PurposeOfVisit)
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<Booking>()
+                .Property(b => b.DocumentUrl)
+                .HasMaxLength(500);
+
+            modelBuilder.Entity<Booking>()
                 .HasOne(b => b.Villa)
                 .WithMany()
                 .HasForeignKey(b => b.VillaId)

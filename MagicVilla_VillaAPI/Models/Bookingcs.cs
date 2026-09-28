@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MagicVilla_VillaAPI.Models
@@ -33,7 +33,13 @@ namespace MagicVilla_VillaAPI.Models
 
         [Required]
         [MaxLength(50)]
-        public string Status { get; set; } = "Pending"; // Pending, Confirmed, Cancelled
+        public string Status { get; set; } = "Pending"; // Pending, Approved, Confirmed, Rejected, Cancelled, Completed
+
+        [MaxLength(100)]
+        public string PurposeOfVisit { get; set; } = string.Empty;
+
+        [MaxLength(500)]
+        public string? DocumentUrl { get; set; }
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 

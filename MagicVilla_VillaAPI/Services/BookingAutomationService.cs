@@ -1,4 +1,4 @@
-﻿using MagicVilla_VillaAPI.Data;
+using MagicVilla_VillaAPI.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace MagicVilla_VillaAPI.Services
@@ -20,9 +20,9 @@ namespace MagicVilla_VillaAPI.Services
 
             var today = DateTime.UtcNow.Date;
 
-            // Jin bookings ki checkout date guzar chuki hai aur status Confirmed hai
+            // Jin bookings ki checkout date guzar chuki hai aur status Confirmed ya Approved hai
             var expiredBookings = await _context.Bookings
-                .Where(b => b.CheckOutDate < today && b.Status == "Confirmed")
+                .Where(b => b.CheckOutDate < today && (b.Status == "Confirmed" || b.Status == "Approved"))
                 .ToListAsync();
 
             if (expiredBookings.Any())

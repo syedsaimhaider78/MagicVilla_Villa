@@ -62,12 +62,76 @@
       <div class="metric-content">
         <span class="metric-label">Quick Actions</span>
         <div class="quick-links">
-          <a routerLink="/villa-create" class="quick-btn">
+          <a routerLink="/bookings" class="quick-btn">
+            Manage Bookings &rarr;
+          </a>
+          <a routerLink="/villa-create" class="quick-btn outline">
             <span>+</span> Full Property Form
           </a>
-          <a routerLink="/villas" class="quick-btn outline">
-            Live Catalogue &rarr;
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pending Booking Requests (Requires Admin Action) -->
+  <section class="pending-requests-section" *ngIf="pendingBookings.length > 0">
+    <div class="pending-section-header">
+      <div class="pending-title-group">
+        <span class="pending-pulse-badge">Action Required</span>
+        <h3>Pending Booking Requests ({{ pendingBookings.length }})</h3>
+        <p>Review customer verification documents and approve or reject stay applications.</p>
+      </div>
+      <a routerLink="/bookings" class="view-all-bookings-link">View All Bookings &rarr;</a>
+    </div>
+
+    <div class="pending-cards-grid">
+      <div class="pending-card" *ngFor="let b of pendingBookings">
+        <div class="pending-card-main">
+          <div class="pending-badge-row">
+            <span class="pending-tag">Pending Review</span>
+            <span class="booking-id-tag">#{{ b.id }}</span>
+            <span class="purpose-pill" *ngIf="b.purposeOfVisit">{{ b.purposeOfVisit }}</span>
+          </div>
+          <h4>{{ b.villaName || 'Villa #' + b.villaId }}</h4>
+          <p class="guest-details">
+            <strong>{{ b.customerName }}</strong> · {{ b.customerEmail }}
+          </p>
+          <div class="stay-meta">
+            <span>{{ b.checkInDate | date:'MMM d' }} – {{ b.checkOutDate | date:'MMM d, y' }} ({{ b.numberOfNights }} nights)</span>
+            <strong class="pending-price">Rs. {{ b.price | number }}</strong>
+          </div>
+        </div>
+
+        <div class="pending-card-actions">
+          <a
+            *ngIf="b.documentUrl"
+            [href]="getDocumentUrl(b.documentUrl)"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-view-doc"
+          >
+            📄 View Passport / CNIC ↗
           </a>
+          <span *ngIf="!b.documentUrl" class="no-doc-label">No Document Attached</span>
+
+          <div class="decision-btns">
+            <button
+              type="button"
+              class="btn-approve-mini"
+              (click)="approveBooking(b)"
+              [disabled]="updatingBookingId === b.id"
+            >
+              ✓ Approve
+            </button>
+            <button
+              type="button"
+              class="btn-reject-mini"
+              (click)="rejectBooking(b)"
+              [disabled]="updatingBookingId === b.id"
+            >
+              ✕ Reject
+            </button>
+          </div>
         </div>
       </div>
     </div>

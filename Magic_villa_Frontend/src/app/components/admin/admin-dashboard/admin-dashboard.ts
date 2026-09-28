@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Villa } from '../../../models/villa.model';
 import { VillaService } from '../../../services/villa.service';
-import { BookingService } from '../../../services/booking.service';
+import { Booking, BookingService } from '../../../services/booking.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
 
@@ -22,6 +22,8 @@ export class AdminDashboardComponent implements OnInit {
   selectedCategory: string = 'All';
   categories: string[] = ['All', 'Villa', 'HotelRoom', 'Apartment'];
   totalBookings: number = 0;
+  pendingBookings: Booking[] = [];
+  updatingBookingId?: number;
   loading: boolean = true;
   loadingMetrics: boolean = true;
   errorMessage: string = '';
@@ -89,17 +91,59 @@ export class AdminDashboardComponent implements OnInit {
     this.loadingMetrics = true;
     this.bookingService.getAllBookings().subscribe({
       next: (res: any) => {
-        const bookings = Array.isArray(res) ? res : res?.result || res?.data || [];
+        const bookings: Booking[] = Array.isArray(res) ? res : res?.result || res?.data || [];
         this.totalBookings = bookings.length;
+        this.pendingBookings = bookings.filter(b => b.status === 'Pending');
         this.loadingMetrics = false;
         this.cdr.detectChanges();
       },
       error: () => {
         this.totalBookings = 0;
+        this.pendingBookings = [];
         this.loadingMetrics = false;
         this.cdr.detectChanges();
       }
     });
+  }
+
+  approveBooking(booking: Booking): void {
+    this.updatingBookingId = booking.id;
+    this.bookingService.approveBooking(booking.id).subscribe({
+      next: () => {
+        this.updatingBookingId = undefined;
+        this.pendingBookings = this.pendingBookings.filter(b => b.id !== booking.id);
+        this.toast.success(`Booking #${booking.id} approved successfully.`);
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.updatingBookingId = undefined;
+        const msg = err?.error?.message || 'Failed to approve booking.';
+        this.toast.error(msg);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  rejectBooking(booking: Booking): void {
+    this.updatingBookingId = booking.id;
+    this.bookingService.rejectBooking(booking.id).subscribe({
+      next: () => {
+        this.updatingBookingId = undefined;
+        this.pendingBookings = this.pendingBookings.filter(b => b.id !== booking.id);
+        this.toast.success(`Booking #${booking.id} rejected.`);
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.updatingBookingId = undefined;
+        const msg = err?.error?.message || 'Failed to reject booking.';
+        this.toast.error(msg);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  getDocumentUrl(relativePath?: string): string {
+    return this.bookingService.getDocumentUrl(relativePath);
   }
 
   filterByCategory(cat: string): void {

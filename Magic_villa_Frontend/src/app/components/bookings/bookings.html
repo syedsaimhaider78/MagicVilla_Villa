@@ -3,14 +3,27 @@
   <section class="bookings-header">
     <p class="eyebrow">{{ auth.isAdmin() ? 'PLATFORM RESERVATIONS' : 'YOUR PRIVATE STAYS' }}</p>
     <div class="header-main-row">
-      <h1>{{ auth.isAdmin() ? 'Manage reservations' : 'My bookings' }}</h1>
+      <h1>{{ auth.isAdmin() ? 'Manage Reservations' : 'My Bookings' }}</h1>
       <span class="booking-counter" *ngIf="!loading && !errorMessage && bookings.length">
-        {{ bookings.length }} {{ bookings.length === 1 ? 'reservation' : 'reservations' }}
+        {{ filteredBookings.length }} of {{ bookings.length }} {{ bookings.length === 1 ? 'reservation' : 'reservations' }}
       </span>
     </div>
     <p class="header-description">
-      {{ auth.isAdmin() ? 'Review, monitor, and update guest reservations across all MagicVilla properties.' : 'Review your upcoming escapes and past reservation history.' }}
+      {{ auth.isAdmin() ? 'Review guest booking requests, inspect verification documents (Passport / CNIC), and approve or reject applications.' : 'Review your upcoming escapes, track application status, and view past reservation history.' }}
     </p>
+
+    <!-- Filter Tabs (Especially useful for Admin) -->
+    <div class="filter-tabs" *ngIf="!loading && bookings.length">
+      <button
+        *ngFor="let opt of filterOptions"
+        type="button"
+        class="filter-tab-btn"
+        [class.active]="selectedFilter === opt"
+        (click)="setFilter(opt)"
+      >
+        {{ opt }}
+      </button>
+    </div>
   </section>
 
   <!-- Loading State -->
@@ -36,8 +49,8 @@
   </section>
 
   <!-- Booking Cards List -->
-  <section class="booking-list" *ngIf="!loading && !errorMessage && bookings.length">
-    <article class="booking-card" *ngFor="let booking of bookings">
+  <section class="booking-list" *ngIf="!loading && !errorMessage && filteredBookings.length">
+    <article class="booking-card" *ngFor="let booking of filteredBookings">
       <!-- Left Section: Details -->
       <div class="card-details">
         <div class="badge-row">
@@ -46,6 +59,9 @@
             {{ booking.status }}
           </span>
           <span class="booking-ref">#{{ booking.id }}</span>
+          <span class="purpose-badge" *ngIf="booking.purposeOfVisit">
+            {{ booking.purposeOfVisit }}
+          </span>
         </div>
 
         <h2 class="villa-name">{{ booking.villaName || ('Villa #' + booking.villaId) }}</h2>
@@ -70,43 +86,215 @@
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
-              {{ booking.customerName }}
+              {{ booking.customerName }} ({{ booking.customerEmail }})
             </span>
           </ng-container>
         </div>
+
+        <!-- Verification Attachment Link -->
+        <div class="document-row" *ngIf="booking.documentUrl">
+          <button type="button" class="doc-badge-btn" (click)="openReview(booking)">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Attached Passport / CNIC</span>
+            <span class="doc-view-text">Review Document &rarr;</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Right Section: Price & Action -->
+      <!-- Right Section: Price & Action Controls -->
       <div class="card-action">
         <div class="price-block">
           <span class="price-label">TOTAL</span>
           <strong class="price-amount">Rs. {{ booking.price | number }}</strong>
         </div>
 
-        <div class="dropdown-wrapper" *ngIf="auth.isAdmin()">
-          <select
-            class="status-dropdown"
-            [disabled]="updatingId === booking.id"
-            [ngModel]="booking.status"
-            (ngModelChange)="update(booking, $event)"
-            [attr.aria-label]="'Change status for booking ' + booking.id"
-          >
-            <option value="Pending">Pending</option>
-            <option value="Confirmed">Confirmed</option>
-            <option value="Completed" *ngIf="booking.status === 'Completed'">Completed</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-          <span class="updating-indicator" *ngIf="updatingId === booking.id"></span>
+        <!-- Admin Quick Actions (Approve / Reject) -->
+        <div class="admin-actions-col" *ngIf="auth.isAdmin()">
+          <div class="action-buttons-group" *ngIf="booking.status === 'Pending'">
+            <button
+              type="button"
+              class="btn-action-approve"
+              (click)="approve(booking)"
+              [disabled]="updatingId === booking.id"
+              title="Approve booking"
+            >
+              ✓ Approve
+            </button>
+            <button
+              type="button"
+              class="btn-action-reject"
+              (click)="reject(booking)"
+              [disabled]="updatingId === booking.id"
+              title="Reject booking"
+            >
+              ✕ Reject
+            </button>
+          </div>
+
+          <!-- Review Button if already processed or has document -->
+          <div class="action-secondary-row">
+            <button type="button" class="btn-review-mini" (click)="openReview(booking)">
+              Review
+            </button>
+
+            <!-- Dropdown for manual override -->
+            <div class="dropdown-wrapper">
+              <select
+                class="status-dropdown"
+                [disabled]="updatingId === booking.id"
+                [ngModel]="booking.status"
+                (ngModelChange)="update(booking, $event)"
+                [attr.aria-label]="'Change status for booking ' + booking.id"
+              >
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Cancelled">Cancelled</option>
+                <option value="Completed">Completed</option>
+              </select>
+              <span class="updating-indicator" *ngIf="updatingId === booking.id"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer Status Feedback -->
+        <div class="customer-status-note" *ngIf="!auth.isAdmin()">
+          <span class="status-note-text" *ngIf="booking.status === 'Pending'">
+            ⏳ Pending Admin Approval
+          </span>
+          <span class="status-note-text confirmed" *ngIf="booking.status === 'Approved' || booking.status === 'Confirmed'">
+            ✓ Reservation Approved
+          </span>
+          <span class="status-note-text rejected" *ngIf="booking.status === 'Rejected' || booking.status === 'Cancelled'">
+            ✕ Reservation Declined
+          </span>
         </div>
       </div>
     </article>
   </section>
 
   <!-- Empty State -->
-  <section class="empty-state catalogue-empty" *ngIf="!loading && !errorMessage && bookings.length === 0">
+  <section class="empty-state catalogue-empty" *ngIf="!loading && !errorMessage && filteredBookings.length === 0">
     <p class="eyebrow">Your next escape awaits</p>
     <h2>No reservations found</h2>
-    <p>Explore our villas to plan your next retreat.</p>
+    <p *ngIf="selectedFilter !== 'All'">No bookings matching the "{{ selectedFilter }}" status filter.</p>
+    <p *ngIf="selectedFilter === 'All'">Explore our villas to plan your next retreat.</p>
     <a routerLink="/villas" class="explore-link">Explore Villas</a>
   </section>
+</div>
+
+<!-- Admin Booking & Verification Document Review Modal -->
+<div class="modal-backdrop" *ngIf="reviewBooking" (click)="closeReview()">
+  <div class="review-modal-content" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <div>
+        <span class="modal-eyebrow">Reservation Review</span>
+        <h3>Booking #{{ reviewBooking.id }} — {{ reviewBooking.villaName || 'Villa #' + reviewBooking.villaId }}</h3>
+      </div>
+      <button type="button" class="close-btn" (click)="closeReview()">✕</button>
+    </header>
+
+    <div class="review-body">
+      <!-- Details Grid -->
+      <div class="review-details-grid">
+        <div class="review-detail-item">
+          <span class="detail-label">Guest Name</span>
+          <strong>{{ reviewBooking.customerName || 'N/A' }}</strong>
+        </div>
+        <div class="review-detail-item">
+          <span class="detail-label">Guest Email</span>
+          <strong>{{ reviewBooking.customerEmail || 'N/A' }}</strong>
+        </div>
+        <div class="review-detail-item">
+          <span class="detail-label">Purpose of Visit</span>
+          <strong class="highlight-purpose">{{ reviewBooking.purposeOfVisit || 'Not Specified' }}</strong>
+        </div>
+        <div class="review-detail-item">
+          <span class="detail-label">Current Status</span>
+          <span class="status-badge" [ngClass]="'status-' + (reviewBooking.status | lowercase)">
+            <span class="status-dot"></span>
+            {{ reviewBooking.status }}
+          </span>
+        </div>
+        <div class="review-detail-item">
+          <span class="detail-label">Dates</span>
+          <strong>{{ reviewBooking.checkInDate | date:'mediumDate' }} – {{ reviewBooking.checkOutDate | date:'mediumDate' }}</strong>
+        </div>
+        <div class="review-detail-item">
+          <span class="detail-label">Total Amount</span>
+          <strong class="price-val">Rs. {{ reviewBooking.price | number }} ({{ reviewBooking.numberOfNights }} nights)</strong>
+        </div>
+      </div>
+
+      <!-- Verification Attachment Preview -->
+      <div class="review-attachment-section">
+        <h4>Verification Attachment (Passport / CNIC)</h4>
+
+        <div class="no-doc-card" *ngIf="!reviewBooking.documentUrl">
+          <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <line x1="9" y1="15" x2="15" y2="15"></line>
+          </svg>
+          <p>No verification document was attached with this reservation request.</p>
+        </div>
+
+        <div class="doc-viewer-card" *ngIf="reviewBooking.documentUrl">
+          <!-- Image Document Preview -->
+          <div class="image-preview-container" *ngIf="isImageDocument(reviewBooking.documentUrl)">
+            <img [src]="getDocumentUrl(reviewBooking.documentUrl)" alt="Passport or CNIC Document" />
+          </div>
+
+          <!-- PDF Document Info / Embed -->
+          <div class="pdf-preview-container" *ngIf="isPdfDocument(reviewBooking.documentUrl)">
+            <div class="pdf-icon-large">PDF</div>
+            <div class="pdf-info">
+              <strong>Official Identity Document (PDF)</strong>
+              <p>Customer uploaded their Passport or CNIC in PDF format.</p>
+            </div>
+          </div>
+
+          <div class="doc-actions-bar">
+            <a
+              [href]="getDocumentUrl(reviewBooking.documentUrl)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-open-doc"
+            >
+              Open Original Document in New Tab ↗
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions (Admin Approval Controls) -->
+    <footer class="review-modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeReview()">Close</button>
+      <div class="review-action-buttons" *ngIf="auth.isAdmin()">
+        <button
+          type="button"
+          class="btn-modal-reject"
+          (click)="reject(reviewBooking)"
+          [disabled]="updatingId === reviewBooking.id || reviewBooking.status === 'Rejected'"
+        >
+          ✕ Reject Booking
+        </button>
+        <button
+          type="button"
+          class="btn-modal-approve"
+          (click)="approve(reviewBooking)"
+          [disabled]="updatingId === reviewBooking.id || reviewBooking.status === 'Approved'"
+        >
+          ✓ Approve Booking
+        </button>
+      </div>
+    </footer>
+  </div>
 </div>

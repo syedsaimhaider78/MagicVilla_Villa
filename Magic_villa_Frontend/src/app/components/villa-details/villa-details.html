@@ -67,17 +67,164 @@
         <p>{{ bookingError }}</p>
       </div>
 
-      <button class="primary-btn" [disabled]="booking || !nights" (click)="reserve()">
-        {{ booking ? 'Confirming...' : 'Reserve this villa' }}
+      <button class="primary-btn" [disabled]="!nights" (click)="openBookingModal()">
+        Book This Villa
       </button>
     </section>
 
     <!-- Booking Success -->
     <section class="booking-success" *ngIf="booked">
-      <p class="eyebrow">Reservation received</p>
-      <h2>Your villa stay is pending confirmation</h2>
-      <p>{{ nights }} nights · Rs. {{ total | number }}</p>
-      <button class="primary-btn" routerLink="/bookings">View my bookings</button>
+      <div class="success-icon-badge">✓</div>
+      <p class="eyebrow">Booking Request Submitted</p>
+      <h2>Your reservation is pending admin approval</h2>
+      <p class="success-subtext">
+        We have received your booking application for <strong>{{ villa.name }}</strong> ({{ nights }} nights · Rs. {{ total | number }}).
+        An administrator will review your application and verification documents shortly.
+      </p>
+      <button class="primary-btn" routerLink="/bookings">View My Bookings</button>
     </section>
+  </div>
+</div>
+
+<!-- Booking Application & Verification Modal -->
+<div class="modal-backdrop" *ngIf="showBookingModal" (click)="closeBookingModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <div class="header-titles">
+        <span class="modal-eyebrow">Reservation Form</span>
+        <h3>Book {{ villa?.name }}</h3>
+      </div>
+      <button type="button" class="close-btn" (click)="closeBookingModal()" [disabled]="booking">✕</button>
+    </header>
+
+    <!-- Reservation Summary Bar -->
+    <div class="modal-summary-bar">
+      <div class="summary-pill">
+        <span class="label">Dates</span>
+        <strong>{{ checkIn | date:'MMM d' }} – {{ checkOut | date:'MMM d, y' }}</strong>
+      </div>
+      <div class="summary-pill">
+        <span class="label">Duration</span>
+        <strong>{{ nights }} {{ nights === 1 ? 'Night' : 'Nights' }}</strong>
+      </div>
+      <div class="summary-pill highlight">
+        <span class="label">Total Price</span>
+        <strong>Rs. {{ total | number }}</strong>
+      </div>
+    </div>
+
+    <form class="modal-form" (ngSubmit)="submitBooking()">
+      <!-- Customer Information -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="custName">Full Name *</label>
+          <input
+            type="text"
+            id="custName"
+            name="custName"
+            [(ngModel)]="customerName"
+            placeholder="e.g. John Doe"
+            required
+            [disabled]="booking"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="custEmail">Email Address *</label>
+          <input
+            type="email"
+            id="custEmail"
+            name="custEmail"
+            [(ngModel)]="customerEmail"
+            placeholder="e.g. john@example.com"
+            required
+            [disabled]="booking"
+          />
+        </div>
+      </div>
+
+      <!-- Purpose of Visit -->
+      <div class="form-group">
+        <label for="purpose">Purpose of Visit *</label>
+        <select
+          id="purpose"
+          name="purpose"
+          [(ngModel)]="purposeOfVisit"
+          required
+          [disabled]="booking"
+        >
+          <option *ngFor="let opt of purposeOptions" [value]="opt">{{ opt }}</option>
+        </select>
+        <span class="field-hint">Specify whether you are visiting for holidays, family gathering, celebration, etc.</span>
+      </div>
+
+      <!-- Attachment Section: Passport / CNIC Upload (Max 2MB) -->
+      <div class="form-group attachment-group">
+        <label>
+          Verification Document (Passport or CNIC)
+          <span class="optional-tag">Image or PDF, max 2MB</span>
+        </label>
+
+        <!-- Dropzone / File Picker -->
+        <div class="upload-dropzone" *ngIf="!selectedFile">
+          <input
+            type="file"
+            id="docFile"
+            accept=".pdf,image/png,image/jpeg,image/jpg,image/webp"
+            (change)="onFileSelected($event)"
+            [disabled]="booking"
+          />
+          <div class="dropzone-body">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <div class="dropzone-text">
+              <span class="dropzone-prompt"><strong>Click to upload</strong> Passport or CNIC</span>
+              <span class="dropzone-limits">Supported formats: PDF, JPG, PNG, WEBP (Max 2MB)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected File Preview -->
+        <div class="selected-file-card" *ngIf="selectedFile">
+          <div class="file-info-col">
+            <div class="file-thumb" *ngIf="filePreview">
+              <img [src]="filePreview" alt="Document Preview" />
+            </div>
+            <div class="file-icon-badge" *ngIf="!filePreview">
+              <span>PDF</span>
+            </div>
+            <div class="file-metadata">
+              <strong class="file-name">{{ selectedFile.name }}</strong>
+              <span class="file-size">{{ getFileSizeDisplay(selectedFile.size) }}</span>
+            </div>
+          </div>
+          <button type="button" class="remove-file-btn" (click)="removeFile()" [disabled]="booking" title="Remove file">✕</button>
+        </div>
+
+        <!-- Validation Error Message -->
+        <div class="file-error-alert" *ngIf="fileError">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>{{ fileError }}</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <footer class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeBookingModal()" [disabled]="booking">
+          Cancel
+        </button>
+        <button type="submit" class="btn-submit" [disabled]="booking || !customerName || !customerEmail">
+          <span *ngIf="!booking">Submit Booking Request</span>
+          <span *ngIf="booking">Submitting Request...</span>
+        </button>
+      </footer>
+    </form>
   </div>
 </div>

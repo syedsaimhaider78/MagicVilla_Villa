@@ -26,6 +26,16 @@ export class VillaDetailsComponent implements OnInit {
   booked = false;
   today = new Date().toISOString().slice(0, 10);
 
+  // Booking Modal & Verification Form fields
+  showBookingModal = false;
+  customerName = '';
+  customerEmail = '';
+  purposeOfVisit = 'Holidays';
+  purposeOptions = ['Holidays', 'Family Stay', 'Party & Celebration', 'Business & Corporate', 'Other'];
+  selectedFile: File | null = null;
+  filePreview: string | null = null;
+  fileError = '';
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -84,8 +94,9 @@ export class VillaDetailsComponent implements OnInit {
     }
   }
 
-  reserve(): void {
+  openBookingModal(): void {
     if (!this.auth.isLoggedIn()) {
+      this.toast.error('Please sign in to proceed with booking.');
       this.router.navigate(['/login']);
       return;
     }
@@ -95,25 +106,125 @@ export class VillaDetailsComponent implements OnInit {
       return;
     }
 
+    const user = this.auth.getUser();
+    this.customerName = user?.name || '';
+    this.customerEmail = user?.email || '';
+    this.purposeOfVisit = 'Holidays';
+    this.selectedFile = null;
+    this.filePreview = null;
+    this.fileError = '';
+    this.bookingError = '';
+    this.showBookingModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeBookingModal(): void {
+    if (this.booking) return;
+    this.showBookingModal = false;
+    this.cdr.detectChanges();
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) {
+      return;
+    }
+
+    const file = input.files[0];
+    const maxSizeBytes = 2 * 1024 * 1024; // 2MB
+
+    if (file.size > maxSizeBytes) {
+      this.fileError = `File size (${(file.size / (1024 * 1024)).toFixed(2)} MB) exceeds 2MB limit. Please upload a smaller file.`;
+      this.selectedFile = null;
+      this.filePreview = null;
+      input.value = '';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.fileError = '';
+    this.selectedFile = file;
+
+    // Generate preview if image
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.filePreview = reader.result as string;
+        this.cdr.detectChanges();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      this.filePreview = null;
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  removeFile(): void {
+    this.selectedFile = null;
+    this.filePreview = null;
+    this.fileError = '';
+    this.cdr.detectChanges();
+  }
+
+  getFileSizeDisplay(bytes?: number): string {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  submitBooking(): void {
+    if (!this.villa || !this.nights) {
+      this.toast.error('Select a valid check-in and check-out date.');
+      return;
+    }
+
+    if (!this.customerName.trim()) {
+      this.fileError = 'Guest name is required.';
+      return;
+    }
+
+    if (!this.customerEmail.trim()) {
+      this.fileError = 'Guest email is required.';
+      return;
+    }
+
+    if (!this.purposeOfVisit) {
+      this.fileError = 'Please specify the purpose of your visit.';
+      return;
+    }
+
     this.booking = true;
     this.bookingError = '';
+    this.fileError = '';
 
-    this.bookings.create({
-      villaId: this.villa.id,
-      checkInDate: this.checkIn,
-      checkOutDate: this.checkOut
-    }).subscribe({
+    const formData = new FormData();
+    formData.append('villaId', String(this.villa.id));
+    formData.append('customerName', this.customerName.trim());
+    formData.append('customerEmail', this.customerEmail.trim());
+    formData.append('checkInDate', this.checkIn);
+    formData.append('checkOutDate', this.checkOut);
+    formData.append('purposeOfVisit', this.purposeOfVisit);
+
+    if (this.selectedFile) {
+      formData.append('document', this.selectedFile, this.selectedFile.name);
+    }
+
+    this.bookings.create(formData).subscribe({
       next: () => {
         this.booking = false;
         this.booked = true;
+        this.showBookingModal = false;
         this.bookingError = '';
-        this.toast.success('Reservation confirmed.');
+        this.toast.success('Your booking request has been submitted for admin approval!');
         this.cdr.detectChanges();
       },
       error: (err: any) => {
         this.booking = false;
-        const msg = err?.error?.message || err?.message || 'Could not create reservation.';
+        const msg = err?.error?.message || err?.message || 'Could not submit reservation request.';
         this.bookingError = msg;
+        this.fileError = msg;
         this.toast.error(msg);
         this.cdr.detectChanges();
       }
