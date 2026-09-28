@@ -48,25 +48,52 @@
         @if (isDropdownOpen()) {
           <div class="notif-dropdown">
             <div class="notif-header">
-              <span class="notif-title">Notifications</span>
-              <button type="button" (click)="notificationService.markAllAsRead()" class="notif-mark-all">
-                Mark all as read
-              </button>
+              <span class="notif-title">
+                Notifications
+                @if (notificationService.unreadCount() > 0) {
+                  <span class="notif-count-tag">{{ notificationService.unreadCount() }} unread</span>
+                }
+              </span>
+              <div class="notif-header-actions">
+                @if (notificationService.unreadCount() > 0) {
+                  <button type="button" (click)="notificationService.markAllAsRead()" class="notif-header-btn">
+                    Mark all read
+                  </button>
+                }
+                @if (notificationService.notifications().length > 0) {
+                  <button type="button" (click)="notificationService.clearAll()" class="notif-header-btn clear">
+                    Clear all
+                  </button>
+                }
+              </div>
             </div>
 
             <div class="notif-list">
               @for (item of notificationService.notifications(); track item.id) {
-                <div class="notif-item" [class.unread]="!item.read">
+                <div class="notif-item" [class.unread]="!item.read" (click)="handleNotificationClick(item)">
+                  <div class="notif-dot" [class.unread]="!item.read"></div>
                   <div class="notif-item-content">
-                    <p class="notif-item-title" [class.success]="item.type === 'success'" [class.error]="item.type === 'error'">
-                      {{ item.title }}
-                    </p>
+                    <div class="notif-item-top">
+                      <p class="notif-item-title" [class.success]="item.type === 'success'" [class.error]="item.type === 'error'">
+                        {{ item.title }}
+                      </p>
+                      @if (item.timestamp) {
+                        <span class="notif-item-time">{{ formatTime(item.timestamp) }}</span>
+                      }
+                    </div>
                     <p class="notif-item-message">{{ item.message }}</p>
                   </div>
-                  <button type="button" (click)="notificationService.dismiss(item.id)" class="notif-item-dismiss" aria-label="Dismiss notification">✕</button>
+                  <button type="button" (click)="$event.stopPropagation(); notificationService.dismiss(item.id)" class="notif-item-dismiss" title="Remove notification" aria-label="Dismiss notification">✕</button>
                 </div>
               } @empty {
-                <p class="notif-empty">No notifications yet</p>
+                <div class="notif-empty">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                  <p class="notif-empty-title">No notifications yet</p>
+                  <span class="notif-empty-desc">New reservations and status updates will be saved here.</span>
+                </div>
               }
             </div>
           </div>

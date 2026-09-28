@@ -49,7 +49,8 @@ export class BookingsComponent implements OnInit {
       return;
     }
 
-    const request = user.role === 'Admin' ? this.bookingService.getAllBookings() : this.bookingService.getMyBookings();
+    const isAdmin = this.auth.isAdmin();
+    const request = isAdmin ? this.bookingService.getAllBookings() : this.bookingService.getMyBookings();
     request.subscribe({
       next: bookings => {
         this.bookings = Array.isArray(bookings) ? bookings : [];
@@ -57,9 +58,11 @@ export class BookingsComponent implements OnInit {
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err: any) => {
+        console.error('Failed to load bookings:', err);
         this.loading = false;
-        this.errorMessage = 'Unable to fetch reservations. Please ensure the backend is running and try again.';
+        this.errorMessage = err?.error?.message 
+          || (err?.status === 403 ? 'Access forbidden. Please sign in as an Admin.' : 'Unable to fetch reservations. Please ensure the backend is running and try again.');
         this.toast.error(this.errorMessage);
         this.cdr.detectChanges();
       }

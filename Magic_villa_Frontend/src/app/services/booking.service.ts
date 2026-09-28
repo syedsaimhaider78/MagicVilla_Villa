@@ -53,6 +53,12 @@ export class BookingService {
   getDocumentUrl(relativePath?: string): string {
     if (!relativePath) return '';
     if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) return relativePath;
+    
+    // Extract file name
+    const fileName = relativePath.split('/').pop();
+    if (fileName && (relativePath.includes('uploads/documents') || relativePath.includes('documents/'))) {
+      return `${this.serverBaseUrl}/api/BookingApi/document/${fileName}`;
+    }
     return `${this.serverBaseUrl}${relativePath}`;
   }
 

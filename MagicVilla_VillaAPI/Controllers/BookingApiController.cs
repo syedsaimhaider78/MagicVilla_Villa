@@ -63,7 +63,15 @@ namespace MagicVilla_VillaAPI.Controllers
         [HttpGet("my")]
         public async Task<ActionResult<IEnumerable<BookingDto>>> GetMyBookings()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var rawId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("nameid")?.Value
+                ?? User.FindFirst("sub")?.Value;
+
+            if (!int.TryParse(rawId, out var userId))
+            {
+                return Unauthorized(new { message = "User identifier could not be determined from the security token." });
+            }
+
             var bookings = await _context.Bookings
                 .Include(b => b.Villa)
                 .Where(b => b.UserId == userId)
@@ -83,7 +91,15 @@ namespace MagicVilla_VillaAPI.Controllers
             if (checkIn < DateTime.UtcNow.Date || checkOut <= checkIn)
                 return BadRequest(new { isSuccess = false, message = "Please select valid booking dates." });
 
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var rawId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("nameid")?.Value
+                ?? User.FindFirst("sub")?.Value;
+
+            if (!int.TryParse(rawId, out var userId))
+            {
+                return Unauthorized(new { isSuccess = false, message = "User identifier could not be determined from token." });
+            }
+
             var user = await _context.Users.FindAsync(userId);
             var villa = await _context.Villas.FindAsync(dto.VillaId);
             if (user == null || villa == null) 
@@ -260,6 +276,40 @@ namespace MagicVilla_VillaAPI.Controllers
             });
 
             return Ok(new { isSuccess = true, message = "Reservation rejected.", booking = ToDto(booking) });
+        }
+
+        [AllowAnonymous]
+        [HttpGet("document/{fileName}")]
+        public IActionResult GetDocument(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return BadRequest(new { message = "File name is required." });
+
+            var sanitized = Path.GetFileName(fileName);
+            var webRoot = _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var primaryPath = Path.Combine(webRoot, "uploads", "documents", sanitized);
+            var fallbackPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "documents", sanitized);
+
+            var filePath = System.IO.File.Exists(primaryPath) ? primaryPath 
+                         : System.IO.File.Exists(fallbackPath) ? fallbackPath 
+                         : null;
+
+            if (filePath == null)
+            {
+                return NotFound(new { message = "Document not found." });
+            }
+
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            var contentType = ext switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".pdf" => "application/pdf",
+                _ => "application/octet-stream"
+            };
+
+            return PhysicalFile(filePath, contentType);
         }
     }
 }

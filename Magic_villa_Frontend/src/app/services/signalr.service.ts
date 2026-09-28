@@ -45,9 +45,11 @@ export class SignalRService {
     this.hubConnection.on('ReceiveBookingNotification', (data: BookingNotificationPayload) => {
       console.log('[SignalR] Received booking notification:', data);
       this.notificationService.show(
-        data.title || 'New Booking Confirmed!',
+        data.title || 'New Booking Notification',
         data.message || 'A new reservation has been processed.',
-        'success'
+        'success',
+        true,
+        { bookingId: data.bookingId, link: '/bookings' }
       );
     });
   }

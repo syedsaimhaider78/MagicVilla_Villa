@@ -78,6 +78,14 @@ builder.Services.AddCors(options =>
     });
 });
 
+var webRootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+var uploadsPath = Path.Combine(webRootPath, "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+builder.Environment.WebRootPath = webRootPath;
+
 var app = builder.Build();
 
 app.UseHangfireDashboard("/hangfire");
@@ -101,6 +109,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
