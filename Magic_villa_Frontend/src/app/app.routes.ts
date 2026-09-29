@@ -1,29 +1,53 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './components/home/home';
-import { VillaListComponent } from './components/villa-list/villa-list';
-import { VillaCreateComponent } from './components/villa-create/villa-create';
-import { VillaDetailsComponent } from './components/villa-details/villa-details';
-import { VillaEditComponent } from './components/villa-edit/villa-edit';
-import { LoginComponent } from './components/auth/register/login/login';
-import { RegisterComponent } from './components/auth/register/register';
-import { BookingsComponent } from './components/bookings/bookings';
-import { AdminDashboardComponent } from './components/admin/admin-dashboard/admin-dashboard';
-import { StaffChatComponent } from './components/staff-chat/staff-chat';
 import { authGuard } from './guards/auth.guards';
 import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
-  { path: 'villas', component: VillaListComponent },
-  { path: 'admin/dashboard', component: AdminDashboardComponent, canActivate: [adminGuard] },
+  { 
+    path: '', 
+    loadComponent: () => import('./components/home/home').then(m => m.HomeComponent) 
+  },
+  { 
+    path: 'villas', 
+    loadComponent: () => import('./components/villa-list/villa-list').then(m => m.VillaListComponent) 
+  },
+  { 
+    path: 'admin/dashboard', 
+    loadComponent: () => import('./components/admin/admin-dashboard/admin-dashboard').then(m => m.AdminDashboardComponent), 
+    canActivate: [adminGuard] 
+  },
   { path: 'admin', redirectTo: 'admin/dashboard', pathMatch: 'full' },
-  { path: 'villa-create', component: VillaCreateComponent, canActivate: [adminGuard] },
-  { path: 'details/:id', component: VillaDetailsComponent },
-  { path: 'villa-edit/:id', component: VillaEditComponent, canActivate: [adminGuard] },
-  { path: 'bookings', component: BookingsComponent, canActivate: [authGuard] },
-  { path: 'staff-chat', component: StaffChatComponent },
+  { 
+    path: 'villa-create', 
+    loadComponent: () => import('./components/villa-create/villa-create').then(m => m.VillaCreateComponent), 
+    canActivate: [adminGuard] 
+  },
+  { 
+    path: 'details/:id', 
+    loadComponent: () => import('./components/villa-details/villa-details').then(m => m.VillaDetailsComponent) 
+  },
+  { 
+    path: 'villa-edit/:id', 
+    loadComponent: () => import('./components/villa-edit/villa-edit').then(m => m.VillaEditComponent), 
+    canActivate: [adminGuard] 
+  },
+  { 
+    path: 'bookings', 
+    loadComponent: () => import('./components/bookings/bookings').then(m => m.BookingsComponent), 
+    canActivate: [authGuard] 
+  },
+  { 
+    path: 'staff-chat', 
+    loadComponent: () => import('./components/staff-chat/staff-chat').then(m => m.StaffChatComponent) 
+  },
   { path: 'chat', redirectTo: 'staff-chat', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
+  { 
+    path: 'login', 
+    loadComponent: () => import('./components/auth/register/login/login').then(m => m.LoginComponent) 
+  },
+  { 
+    path: 'register', 
+    loadComponent: () => import('./components/auth/register/register').then(m => m.RegisterComponent) 
+  },
   { path: '**', redirectTo: '' }
 ];

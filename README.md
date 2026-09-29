@@ -160,10 +160,10 @@ MagicVilla is structured as a high-performance **Monorepo** with a clean separat
 ```mermaid
 flowchart TB
     subgraph ClientLayer ["Client Layer (Angular 17+ Standalone)"]
-        UI["Modern UI (SCSS Theme Engine: Light/Dark)"]
-        Components["Components\n• Villa Explorer\n• Booking Modal & Upload Dropzone\n• Admin Dashboard & Document Viewer\n• Notification Center (Signals)\n• Staff Chat & Call Modal"]
-        Services["Core Services\n• AuthService (JWT & Google OAuth 2.0)\n• BookingService (REST Client & URL Resolver)\n• NotificationService (Signals & LocalStorage)\n• SignalRService (WebSockets Listener)"]
-        Guards["Guards\n• authGuard\n• adminGuard"]
+        UI["Modern UI<br/>(SCSS Theme Engine: Light/Dark)"]
+        Components["Components<br/>• Villa Explorer<br/>• Booking Modal & Upload Dropzone<br/>• Admin Dashboard & Document Viewer<br/>• Notification Center (Signals)<br/>• Staff Chat & Call Modal"]
+        Services["Core Services<br/>• AuthService (JWT & Google OAuth 2.0)<br/>• BookingService (REST Client & URL Resolver)<br/>• NotificationService (Signals & LocalStorage)<br/>• SignalRService (WebSockets Listener)"]
+        Guards["Guards<br/>• authGuard<br/>• adminGuard"]
     end
 
     subgraph ServerLayer ["Server Layer (ASP.NET Core Web API - .NET 10)"]
@@ -171,24 +171,24 @@ flowchart TB
         AuthMiddleware["JWT Bearer Authentication & Claims Validation"]
         StaticMiddleware["Static File Middleware & Document Streaming Provider"]
         
-        Controllers["Controllers\n• AuthApiController (Auth & Google OAuth)\n• VillaApiController (Inventory CRUD)\n• BookingApiController (Bookings, Approvals, File Streaming)"]
+        Controllers["Controllers<br/>• AuthApiController (Auth & Google OAuth)<br/>• VillaApiController (Inventory CRUD)<br/>• BookingApiController (Bookings, Approvals, File Streaming)"]
         
-        Hubs["SignalR Hubs\n• NotificationHub (/hubs/notifications)\n• ChatHub (/Chat)\n• CallHub (/hubs/call)"]
+        Hubs["SignalR Hubs<br/>• NotificationHub (/hubs/notifications)<br/>• ChatHub (/Chat)<br/>• CallHub (/hubs/call)"]
         
-        HangfireEngine["Hangfire Background Engine\n• BookingAutomationService\n• EmailNotificationService"]
+        HangfireEngine["Hangfire Background Engine<br/>• BookingAutomationService<br/>• EmailNotificationService"]
     end
 
     subgraph DataLayer ["Data & Storage Layer"]
         EF["Entity Framework Core 10"]
-        SQLDB[("SQL Server (MagicVillaDB)\n• Villas\n• Bookings\n• Users\n• ChatMessages\n• Hangfire Jobs")]
-        FileDisk[("Physical Disk Storage\n/wwwroot/uploads/documents/")]
+        SQLDB[("SQL Server - MagicVillaDB<br/>• Villas<br/>• Bookings<br/>• Users<br/>• ChatMessages<br/>• Hangfire Jobs")]
+        FileDisk[("Physical Disk Storage<br/>/wwwroot/uploads/documents/")]
     end
 
     UI --> Components
     Components --> Guards
     Components --> Services
-    Services -->|HTTP / REST (JWT)| Routing
-    Services <-->|WebSockets (SignalR)| Hubs
+    Services -->|"HTTP / REST (JWT)"| Routing
+    Services <-->|"WebSockets (SignalR)"| Hubs
     
     Routing --> AuthMiddleware
     AuthMiddleware --> Controllers
@@ -208,13 +208,13 @@ The customer verification architecture is built for strict validation, storage s
 
 ```mermaid
 flowchart LR
-    A["1. Client Form\n(Name, Email, Purpose,\nPassport/CNIC File)"] -->|multipart/form-data| B["2. BookingApiController\nCreateBooking()"]
-    B --> C{"3. Validation Engine\n• Size <= 2MB?\n• Allowed Extension?\n• Dates Available?"}
-    C -- Invalid --> D["4a. 400 Bad Request\n(Returns error message)"]
-    C -- Valid --> E["4b. Disk Writer\nGenerates GUID\nSaves to /wwwroot/uploads/"]
-    E --> F["5. EF Core Persistence\nInserts Booking with\nRelative DocumentUrl"]
-    F --> G["6. SignalR Broadcast\nAlerts Admin Desk\nin Real Time"]
-    G --> H["7. Admin Inspection\nGET /api/BookingApi/document/{file}\nInline Preview & Decision"]
+    A["1. Client Form<br/>(Name, Email, Purpose,<br/>Passport/CNIC File)"] -->|"multipart/form-data"| B["2. BookingApiController<br/>CreateBooking()"]
+    B --> C{"3. Validation Engine<br/>• Size &le; 2MB?<br/>• Allowed Extension?<br/>• Dates Available?"}
+    C -- "Invalid" --> D["4a. 400 Bad Request<br/>(Returns error message)"]
+    C -- "Valid" --> E["4b. Disk Writer<br/>Generates GUID<br/>Saves to /wwwroot/uploads/"]
+    E --> F["5. EF Core Persistence<br/>Inserts Booking with<br/>Relative DocumentUrl"]
+    F --> G["6. SignalR Broadcast<br/>Alerts Admin Desk<br/>in Real Time"]
+    G --> H["7. Admin Inspection<br/>GET /api/BookingApi/document/{file}<br/>Inline Preview & Decision"]
 ```
 
 ### Technical Implementation Details:
