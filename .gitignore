@@ -14,3 +14,7 @@ dist/
 # Archives
 *.rar
 *.zip
+# brag video tool
+.agents/
+skills-lock.json
+brag-output/
